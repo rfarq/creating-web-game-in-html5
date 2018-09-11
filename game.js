@@ -25,6 +25,9 @@ Game.prototype = {
     // Setup the boundaries of the game's arena.
     this.setupBoundaries();
 
+    // Draw the ship to the scene.
+    this.createShip();
+
     // Begin the first frame.
     requestAnimationFrame(this.tick.bind(this));
   },
@@ -65,6 +68,29 @@ Game.prototype = {
     
     // Attach the walls to the stage.
     this.stage.addChild(walls);    
+  },
+
+  createShip: function() {
+    // Create the ship object.
+    this.ship = new PIXI.Graphics();
+
+    // Draw the ship's body
+    this.ship.beginFill(0x20d3fe);
+    this.ship.moveTo(0, 0);
+    this.ship.lineTo(-26, 60);
+    this.ship.lineTo(26, 60);
+    this.ship.endFill();
+
+    // Add engine to our ship.
+    this.ship.beginFill(0x1495d1);
+    this.ship.drawRect(-15, 60, 30, 8);
+    this.ship.endFill();
+
+    this.ship.x = Math.round(this._width / 2);
+    this.ship.y = Math.round(this._height / 2);
+
+    // Attach the ship to the stage.
+    this.stage.addChild(this.ship);
   },
 
   /**
