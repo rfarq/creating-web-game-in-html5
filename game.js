@@ -19,6 +19,14 @@ var Game = function() {
   this.speed = 100;
   this.turnSpeed = 2;
 
+  window.addEventListener('keydown', function(event) {
+    this.handleKeys(event.keyCode, true);
+  }.bind(this), false);
+
+  window.addEventListener('keyup', function(event) {
+    this.handleKeys(event.keyCode, false);
+  }.bind(this), false);
+
   // Start running the game.
   this.build();
 };
@@ -108,54 +116,49 @@ Game.prototype = {
 
     // Attach the ship to the stage.
     this.stage.addChild(this.shipGraphics);
-
-    // Setup our ship's interaction for flight.
-    Mousetrap.bind('w', function() {
-      this.shipGraphics.rotation = 0;
-      this.moveShip('n');
-    }.bind(this));
-
-    Mousetrap.bind('s', function() {
-      this.shipGraphics.rotation = 180 * (Math.PI / 180);
-      this.moveShip('s');
-    }.bind(this));
-
-    Mousetrap.bind('d', function() {
-      this.shipGraphics.rotation = 90 * (Math.PI / 180);
-      this.moveShip('e');
-    }.bind(this));
-
-    Mousetrap.bind('a', function() {
-      this.shipGraphics.rotation = 270 * (Math.PI / 180);
-      this.moveShip('w');
-    }.bind(this));
   },
 
-  moveShip: function(dir) {
-    var speed = 30;
-
-    // Increment x/y value of the ship in the direction
-    // that it will be moving.
-    switch (dir) {
-      case 'n':
-        this.shipGraphics.y -= speed;
-        break;
-      
-      case 's':
-        this.shipGraphics.y += speed;
+  /**
+   * Handle key presses and filter them.
+   * @param {Number} code Key code pressed.
+   * @param {Boolean} state true/false
+   */
+  handleKeys: function(code, state) {
+    switch (code) {
+      case 65: // A
+        this.keyLeft = state;
         break;
 
-      case 'e':
-        this.shipGraphics.x += speed;
-        break;
+        case 68: // D
+          this.keyRight = state;
+          break;
 
-      case 'w':
-        this.shipGraphics.x -= speed;
-        break;
+        case 87: // W
+          this.keyUp = state;
+          break;
     }
   },
 
+  /**
+   * Update physics within the game loop.
+   */
   updatePhysics: function() {
+    // Update the ship's abgular velocities for rotation.
+    if (this.keyLeft) {
+      this.ship.angularVelocity = -1 * this.turnSpeed;
+    } else if (this.keyRight) {
+      this.ship.angularVelocity = this.turnSpeed;
+    } else {
+      this.ship.angularVelocity = 0;
+    }
+
+    // Apply the force vector to ship.
+    if(this.keyUp) {
+      var angle = this.ship.angle + Math.PI / 2;
+      this.ship.force[0] -= this.speed * Math.cos(angle);
+      this.ship.force[1] -= this.speed * Math.sin(angle);
+    }
+
     // Update the position of the graphics based on the 
     // physics simulation position
     this.shipGraphics.x = this.ship.position[0];
