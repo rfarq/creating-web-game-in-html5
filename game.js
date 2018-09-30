@@ -91,6 +91,51 @@ Game.prototype = {
 
     // Attach the ship to the stage.
     this.stage.addChild(this.ship);
+
+    // Setup our ship's interaction for flight.
+    Mousetrap.bind('w', function() {
+      this.ship.rotation = 0;
+      this.moveShip('n');
+    }.bind(this));
+
+    Mousetrap.bind('s', function() {
+      this.ship.rotation = 180 * (Math.PI / 180);
+      this.moveShip('s');
+    }.bind(this));
+
+    Mousetrap.bind('d', function() {
+      this.ship.rotation = 90 * (Math.PI / 180);
+      this.moveShip('e');
+    }.bind(this));
+
+    Mousetrap.bind('a', function() {
+      this.ship.rotation = 270 * (Math.PI / 180);
+      this.moveShip('w');
+    }.bind(this));
+  },
+
+  moveShip: function(dir) {
+    var speed = 30;
+
+    // Increment x/y value of the ship in the direction
+    // that it will be moving.
+    switch (dir) {
+      case 'n':
+        this.ship.y -= speed;
+        break;
+      
+      case 's':
+        this.ship.y += speed;
+        break;
+
+      case 'e':
+        this.ship.x += speed;
+        break;
+
+      case 'w':
+        this.ship.x -= speed;
+        break;
+    }
   },
 
   /**
