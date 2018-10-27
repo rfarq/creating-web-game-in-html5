@@ -29,6 +29,7 @@ var Game = function() {
 
   this.enemyBodies = [];
   this.enemyGraphics = [];
+  this.removeObjs = [];
 
   // Start running the game.
   this.build();
@@ -66,6 +67,13 @@ Game.prototype = {
         boom2: [4000, 636],
         boom3: [6000, 1925]
       }
+    });
+
+    this.music = new Howl({
+      urls: ['music.mp3', 'music.ogg'],
+      buffer: true,
+      autoplay: true,
+      volume: 0.7
     });
   },
 
@@ -156,17 +164,18 @@ Game.prototype = {
         angularVelocity: va
       });
       var enemyShape = new p2.Circle(20);
+      enemyShape.sensor = true;
       enemy.addShape(enemyShape);
       this.world.addBody(enemy);
 
       // Create the graphics object.
       var enemyGraphics = new PIXI.Graphics();
       enemyGraphics.beginFill(0x38d41a);
-      enemyGraphics.drawCircle(x, y, 20);
+      enemyGraphics.drawCircle(0, 0, 20);
       enemyGraphics.endFill();
       enemyGraphics.beginFill(0x2aff00);
       enemyGraphics.lineStyle(1, 0x239d0b, 1);
-      enemyGraphics.drawCircle(x, y, 10);
+      enemyGraphics.drawCircle(0, 0, 10);
       enemyGraphics.endFill();
 
       this.stage.addChild(enemyGraphics);
@@ -176,6 +185,12 @@ Game.prototype = {
       this.enemyGraphics.push(enemyGraphics);
       
     }.bind(this), 1000);
+
+    this.world.on('beginContact', function(event) {
+      if(event.bodyB.id === this.ship.id) {
+        this.removeObjs.push(event.bodyA);
+      }
+    }.bind(this));
   },
 
   /**
@@ -247,6 +262,22 @@ Game.prototype = {
     // Step the physics simulation forward.
     this.world.step(1 / 60);
 
+    // Remove enemy bodies.
+    for (i=0; i<this.removeObjs.length; i++) {
+      this.world.removeBody(this.removeObjs[i]);
+
+      var index = this.enemyBodies.indexOf(this.removeObjs[i]);
+      if(index) {
+        this.enemyBodies.splice(index, 1);
+        this.stage.removeChild(this.enemyGraphics[index]);
+        this.enemyGraphics.splice(index, 1);
+      }
+
+      // Play random boom sound
+      this.sounds.play('boom' + (Math.ceil(Math.random() * 3)));
+    }
+
+    this.removeObjs.length = 0;
   },
 
   /**
