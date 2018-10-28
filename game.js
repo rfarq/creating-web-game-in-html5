@@ -213,7 +213,7 @@ Game.prototype = {
       this.enemyBodies.push(enemy);
       this.enemyGraphics.push(enemySprite);
       
-    }.bind(this), 1000);
+    }.bind(this), 10);
 
     this.world.on('beginContact', function(event) {
       if(event.bodyB.id === this.ship.id) {
@@ -284,8 +284,15 @@ Game.prototype = {
 
     // Update enemy positions
     for(var i=0; i<this.enemyBodies.length; i++) {
-      this.enemyGraphics[i].x = this.enemyBodies[i].position[0];
-      this.enemyGraphics[i].y = this.enemyBodies[i].position[1];
+      var x = this.enemyBodies[i].position[0];
+      var y = this.enemyBodies[i].position[1];
+      this.enemyGraphics[i].x = x;
+      this.enemyGraphics[i].y = y;
+
+      // Remove enemy bodies that are off the map.
+      if(x < 0 || y < 0 || x > this._width || y > this._height) {
+        this.removeObjs.push(this.enemyBodies[i]);
+      }
     }
 
     // Step the physics simulation forward.
