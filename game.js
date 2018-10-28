@@ -3,8 +3,13 @@ var Game = function() {
   this._width = 1280;
   this._height = 720;
 
+  // Setup the background canvas.
+  this.bgRenderer = new PIXI.CanvasRenderer(this._width, this._height);
+  document.body.appendChild(this.bgRenderer.view);
+  this.bgStage = new PIXI.Stage();
+
   // Setup the rendering surface.
-  this.renderer = new PIXI.CanvasRenderer(this._width, this._height);
+  this.renderer = new PIXI.CanvasRenderer(this._width, this._height, null, true);
   document.body.appendChild(this.renderer.view);
 
   // Create the main stage to draw on.
@@ -96,8 +101,11 @@ Game.prototype = {
       star.endFill();
 
       // Attach the star to the stage.
-      this.stage.addChild(star);
+      this.bgStage.addChild(star);
     }
+
+    // Render the stars once.
+    this.bgRenderer.render(this.bgStage);
   },
 
   /**
@@ -112,7 +120,10 @@ Game.prototype = {
     walls.drawRect(0, 10, 10, this._height - 20);
     
     // Attach the walls to the stage.
-    this.stage.addChild(walls);    
+    this.bgStage.addChild(walls);
+    
+    // Render the boundaries once.
+    this.bgRenderer.render(this.bgStage);
   },
 
   createShip: function() {
@@ -128,25 +139,51 @@ Game.prototype = {
     this.ship.addShape(this.shipShape);
     this.world.addBody(this.ship);
 
-    this.shipGraphics = new PIXI.Graphics();
-
+    var shipGraphics = new PIXI.Graphics();
+    
     // Draw the ship's body
-    this.shipGraphics.beginFill(0x20d3fe);
-    this.shipGraphics.moveTo(0, 0);
-    this.shipGraphics.lineTo(-26, 60);
-    this.shipGraphics.lineTo(26, 60);
-    this.shipGraphics.endFill();
+    shipGraphics.beginFill(0x20d3fe);
+    shipGraphics.moveTo(26, 0);
+    shipGraphics.lineTo(0, 60);
+    shipGraphics.lineTo(52, 60);
+    shipGraphics.endFill();
 
     // Add engine to our ship.
-    this.shipGraphics.beginFill(0x1495d1);
-    this.shipGraphics.drawRect(-15, 60, 30, 8);
-    this.shipGraphics.endFill();
+    shipGraphics.beginFill(0x1495d1);
+    shipGraphics.drawRect(7, 60, 38, 8);
+    shipGraphics.endFill();
+
+    // Cache the ship to only use one draw call per tick
+    var shipCache = new PIXI.CanvasRenderer(52, 69, null, true);
+    var shipCacheStage = new PIXI.Stage();
+    shipCacheStage.addChild(shipGraphics);
+    shipCache.render(shipCacheStage);
+    var shipTexture = PIXI.Texture.fromCanvas(shipCache.view);
+    this.shipGraphics = new PIXI.Sprite(shipTexture);
 
     // Attach the ship to the stage.
     this.stage.addChild(this.shipGraphics);
   },
 
   createEnemies: function() {
+    // Create the graphics object.
+    var enemyGraphics = new PIXI.Graphics();
+    enemyGraphics.beginFill(0x38d41a);
+    enemyGraphics.drawCircle(20, 20, 20);
+    enemyGraphics.endFill();
+    enemyGraphics.beginFill(0x2aff00);
+    enemyGraphics.lineStyle(1, 0x239d0b, 1);
+    enemyGraphics.drawCircle(20, 20, 10);
+    enemyGraphics.endFill();
+
+    // Create the enemy cache.
+    var enemyCache = new PIXI.CanvasRenderer(40, 40, null, true);
+    var enemyCacheStage = new PIXI.Stage();
+    enemyCacheStage.addChild(enemyGraphics);
+    enemyCache.render(enemyCacheStage);
+    var enemyTexture = PIXI.Texture.fromCanvas(enemyCache.view);
+
+
     // Create random interval to generate new enemies.
     this.enemyTimer = setInterval(function() {
       // Create the enemy physics body.
@@ -168,21 +205,13 @@ Game.prototype = {
       enemy.addShape(enemyShape);
       this.world.addBody(enemy);
 
-      // Create the graphics object.
-      var enemyGraphics = new PIXI.Graphics();
-      enemyGraphics.beginFill(0x38d41a);
-      enemyGraphics.drawCircle(0, 0, 20);
-      enemyGraphics.endFill();
-      enemyGraphics.beginFill(0x2aff00);
-      enemyGraphics.lineStyle(1, 0x239d0b, 1);
-      enemyGraphics.drawCircle(0, 0, 10);
-      enemyGraphics.endFill();
-
-      this.stage.addChild(enemyGraphics);
+      
+      var enemySprite = new PIXI.Sprite(enemyTexture);
+      this.stage.addChild(enemySprite);
 
       // Keep track of these enemies.
       this.enemyBodies.push(enemy);
-      this.enemyGraphics.push(enemyGraphics);
+      this.enemyGraphics.push(enemySprite);
       
     }.bind(this), 1000);
 
