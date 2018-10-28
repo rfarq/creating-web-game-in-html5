@@ -1,7 +1,12 @@
 var Game = function() {
   // Set the width and height of the scene.
-  this._width = 1280;
-  this._height = 720;
+  this._width = 1920;
+  this._height = 1080;
+
+  // Make sure to maintain the correct aspect ratio
+  window.addEventListener('resize', function() {
+    this.resize();
+  }.bind(this), false);
 
   // Setup the background canvas.
   this.bgRenderer = new PIXI.CanvasRenderer(this._width, this._height);
@@ -45,6 +50,8 @@ Game.prototype = {
    * Build the scene and begin animating.
    */
   build: function() {
+    this.resize();
+
     // Draw the star-field in the background.
     this.drawStars();
 
@@ -213,10 +220,11 @@ Game.prototype = {
       this.enemyBodies.push(enemy);
       this.enemyGraphics.push(enemySprite);
       
-    }.bind(this), 10);
+    }.bind(this), 1000);
 
     this.world.on('beginContact', function(event) {
       if(event.bodyB.id === this.ship.id) {
+        event.bodyA._sound = true;
         this.removeObjs.push(event.bodyA);
       }
     }.bind(this));
@@ -302,18 +310,41 @@ Game.prototype = {
     for (i=0; i<this.removeObjs.length; i++) {
       this.world.removeBody(this.removeObjs[i]);
 
+      // Play random boom sound
+      if(this.removeObjs[i]._sound) {
+        this.sounds.play('boom' + (Math.ceil(Math.random() * 3)));
+      }
+      
       var index = this.enemyBodies.indexOf(this.removeObjs[i]);
       if(index) {
         this.enemyBodies.splice(index, 1);
         this.stage.removeChild(this.enemyGraphics[index]);
         this.enemyGraphics.splice(index, 1);
       }
-
-      // Play random boom sound
-      this.sounds.play('boom' + (Math.ceil(Math.random() * 3)));
     }
 
     this.removeObjs.length = 0;
+  },
+
+  /**
+   * Fired on the resize event.
+   */
+  resize: function() {
+    var ratio = 1080 / 1920;
+    var docWidth = document.body.clientWidth;
+    var docHeight = document.body.clientHeight;
+
+    if (docHeight / docWidth < ratio) {
+      this.bgRenderer.view.style.height = '100%';
+      this.renderer.view.style.height = '100%';
+      this.bgRenderer.view.style.width = 'auto';
+      this.renderer.view.style.width = 'auto';
+    } else {
+      this.bgRenderer.view.style.width = '100%';
+      this.renderer.view.style.width = '100%';
+      this.bgRenderer.view.style.height = 'auto';
+      this.renderer.view.style.height = 'auto';
+    }
   },
 
   /**
