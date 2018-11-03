@@ -1,4 +1,8 @@
 var Game = function() {
+  // Determine what player we are
+  // Make sure to add #0 or #1 to the end of the URL
+  this._player = parseInt(window.location.hash.replace('#',''), 10);
+
   // Set the width and height of the scene.
   this._width = 1920;
   this._height = 1080;
@@ -26,8 +30,8 @@ var Game = function() {
   });
 
   // Speed parameters for our ship
-  this.speed = 100;
-  this.turnSpeed = 2;
+  this.speed = 500;
+  this.turnSpeed = 3;
 
   window.addEventListener('keydown', function(event) {
     this.handleKeys(event.keyCode, true);
@@ -40,6 +44,15 @@ var Game = function() {
   this.enemyBodies = [];
   this.enemyGraphics = [];
   this.removeObjs = [];
+
+  // Setup socket.io.
+  this.socket = io('http://localhost:2000');
+
+  // Update the score when data received.
+  this.socket.on('score', function(msg) {
+    this._score[msg.plr] = msg.score;
+    this.score[msg.plr].setText(this._score[msg.plr]);
+  }.bind(this));
 
   // Start running the game.
   this.build();
@@ -67,10 +80,16 @@ Game.prototype = {
     // Setup howler.js audio.
     this.setupAudio();
 
+    // Setup score views.
+    this.setupScores();
+
     // Begin the first frame.
     requestAnimationFrame(this.tick.bind(this));
   },
 
+  /**
+   * Setup the howler.js audio object.
+   */
   setupAudio: function() {
     this.sounds = new Howl({
       urls: ['sounds.mps', 'sounds.ogg'],
@@ -133,6 +152,9 @@ Game.prototype = {
     this.bgRenderer.render(this.bgStage);
   },
 
+  /**
+   * Setup our player's spaceship and draw to the stage.
+   */
   createShip: function() {
     // Create the ship object.
     this.ship = new p2.Body({
@@ -149,14 +171,14 @@ Game.prototype = {
     var shipGraphics = new PIXI.Graphics();
     
     // Draw the ship's body
-    shipGraphics.beginFill(0x20d3fe);
+    shipGraphics.beginFill(this._player === 0 ? 0x20d3fe : 0xffe400);
     shipGraphics.moveTo(26, 0);
     shipGraphics.lineTo(0, 60);
     shipGraphics.lineTo(52, 60);
     shipGraphics.endFill();
 
     // Add engine to our ship.
-    shipGraphics.beginFill(0x1495d1);
+    shipGraphics.beginFill(this._player === 0 ? 0x1495d1 : 0xffc000);
     shipGraphics.drawRect(7, 60, 38, 8);
     shipGraphics.endFill();
 
@@ -172,6 +194,9 @@ Game.prototype = {
     this.stage.addChild(this.shipGraphics);
   },
 
+  /**
+   * Create a new enemy every 1000ms with random params.
+   */
   createEnemies: function() {
     // Create the graphics object.
     var enemyGraphics = new PIXI.Graphics();
@@ -226,8 +251,48 @@ Game.prototype = {
       if(event.bodyB.id === this.ship.id) {
         event.bodyA._sound = true;
         this.removeObjs.push(event.bodyA);
+    
+        // Add a point to the score.
+        this._score[this._player]++;
+        this.score[this._player].setText(this._score[this._player]);
+
+        // Broadcast the score update to all clients.
+        this.socket.emit('score', {
+          score: this._score[this._player],
+          plr: this._player
+        });
       }
     }.bind(this));
+  },
+
+  /**
+   * Setup the text to display scores
+   */
+  setupScores: function() {
+    this._score = [0, 0];
+    this.score = [];
+
+    // Setup the score text for player 1
+    this.score[0] = new PIXI.Text(this._score[0], {
+      font: 'bold 40px Arial',
+      fill: 'cyan',
+      align: 'left'
+    });
+    this.score[0].x = 20;
+    this.score[0].y = 1025;
+
+    // Setup the score text for player 2.
+    this.score[1] = new PIXI.Text(this._score[1], {
+      font: 'bold 40px Arial',
+      fill: 'yellow',
+      align: 'right'
+    });
+    this.score[1].x = 1880;
+    this.score[1].y = 1025;
+
+    // Add the text to the stage
+    this.stage.addChild(this.score[0]);
+    this.stage.addChild(this.score[1]);
   },
 
   /**
