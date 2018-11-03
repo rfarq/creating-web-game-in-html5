@@ -1,0 +1,2 @@
+Deployment command:
+uglifyjs pixi.dev.js p2.js howler.js game.js index.js -o deploy/game.js

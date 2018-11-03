@@ -1,0 +1,14 @@
+CACHE MANIFEST
+
+# v1.0.0
+
+CACHE:
+index.html
+deploy/game.js
+music.mp3
+sounds.mp3
+sounds.ogg
+https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js
+
+NETWORK:
+*
